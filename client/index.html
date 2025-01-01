@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Home Price Prediction</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 50px;
+        }
+        .container {
+            max-width: 500px;
+            margin: auto;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        button {
+            width: 100%;
+            padding: 10px;
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 1.2em;
+            color: blue;
+        }
+    </style>
+</head>
+<body>
+    <h1>Home Price Prediction</h1>
+
+    <div class="container">
+        <label for="total_sqft">Total Square Feet:</label>
+        <input type="number" id="total_sqft" name="total_sqft" required><br><br>
+
+        <label for="location">Location:</label>
+        <select id="location" name="location">
+            <option value="">Select a location</option>
+            <!-- Locations will be populated by JS -->
+        </select><br><br>
+
+        <label for="bhk">BHK:</label>
+        <select id="bhk" name="bhk">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+        </select><br><br>
+
+        <label for="bath">Bath:</label>
+        <select id="bath" name="bath">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+            <option value="4">4</option>
+            <option value="5">5</option>
+        </select><br><br>
+
+        <button onclick="predictPrice()">Predict Price</button>
+
+        <h2 id="result">Estimated Price: </h2>
+    </div>
+
+    <script>
+        function getLocationNames() {
+            fetch('http://127.0.0.1:5000/get_location_names')
+            .then(response => response.json())
+            .then(data => {
+                const locationSelect = document.getElementById("location");
+                if (data.locations && data.locations.length > 0) {
+                    data.locations.forEach(location => {
+                        const option = document.createElement("option");
+                        option.value = location;
+                        option.text = location;
+                        locationSelect.add(option);
+                    });
+                } else {
+                    console.error("No locations found in the response.");
+                }
+            })
+            .catch(error => {
+                console.error("Error fetching location names:", error);
+            });
+        }
+
+        function predictPrice() {
+            const total_sqft = document.getElementById("total_sqft").value;
+            const location = document.getElementById("location").value;
+            const bhk = parseInt(document.getElementById("bhk").value, 10);
+            const bath = parseInt(document.getElementById("bath").value, 10);
+
+            if (!location) {
+                alert("Please select a location.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append("total_sqft", total_sqft);
+            formData.append("location", location);
+            formData.append("bhk", bhk);
+            formData.append("bath", bath);
+
+            fetch('http://127.0.0.1:5000/predict_home_price', {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => response.json())
+            .then(data => {
+                document.getElementById("result").innerText = "Estimated Price: " + data.estimated_price + " Lakhs";
+            })
+            .catch(error => {
+                console.error("Error predicting price:", error);
+            });
+        }
+
+        // Initialize locations dropdown when the page loads
+        window.onload = getLocationNames;
+    </script>
+</body>
+</html>
